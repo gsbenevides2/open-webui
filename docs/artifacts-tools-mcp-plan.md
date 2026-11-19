@@ -1,6 +1,8 @@
 # Plano — Acesso de Artifacts às Tools e MCPs do usuário no Open WebUI
 
-> **Status:** Proposta / Plano de implementação (fase inicial)
+> **Status:** Implementado neste fork (fases 0–2 e parte das fases 3–5). Ver
+> [`artifacts-tools.md`](./artifacts-tools.md) para a documentação da feature e a lista
+> explícita do que ficou de fora.
 > **Fork:** https://github.com/gsbenevides2/open-webui
 > **Branch proposta:** `feat/artifact-tools-mcp`
 > **Base analisada:** `main` @ `0666e59d2` (2026-11-17)
