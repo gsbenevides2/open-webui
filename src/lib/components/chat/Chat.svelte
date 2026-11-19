@@ -248,7 +248,11 @@
 		null;
 	// The HTML and SVG found in this chat's answers. An embedded chat can open them only
 	// through onOpenArtifacts; the main chat opens them in its own tabs.
-	export let artifacts: Writable<{ type: string; content: string }[]> = writable([]);
+	export let artifacts: Writable<{ type: string; content: string; messageId?: string }[]> =
+		writable([]);
+	// Tools this chat has selected. Artifacts may call these and nothing else; the
+	// backend re-checks access grants on every call.
+	export let artifactToolIds: Writable<string[]> = writable([]);
 	export let onOpenArtifacts: ((code?: string) => void) | null = null;
 
 	let loading = true;
@@ -2915,13 +2919,19 @@
                         </body>
                         </html>
                     `;
-						contents = [...contents, { type: 'iframe', content: renderedContent }];
+						contents = [
+							...contents,
+							{ type: 'iframe', content: renderedContent, messageId: message.id }
+						];
 					});
 				} else {
 					// Check for SVG content
 					for (const block of codeBlocks) {
 						if (block.lang === 'svg' || (block.lang === 'xml' && block.code.includes('<svg'))) {
-							contents = [...contents, { type: 'svg', content: block.code }];
+							contents = [
+								...contents,
+								{ type: 'svg', content: block.code, messageId: message.id }
+							];
 						}
 					}
 				}
@@ -2930,6 +2940,17 @@
 
 		artifacts.set(contents);
 	};
+
+	// Keep the artifact tab's allowlist in sync with the tools this chat has selected.
+	let lastArtifactToolKey = '';
+	$: {
+		const nextToolIds = [...selectedToolIds];
+		const nextToolKey = nextToolIds.join('|');
+		if (nextToolKey !== lastArtifactToolKey) {
+			lastArtifactToolKey = nextToolKey;
+			artifactToolIds.set(nextToolIds);
+		}
+	}
 
 	// Web functions
 
@@ -6587,6 +6608,7 @@
 					bind:files
 					chatId={$chatId}
 					mainArtifacts={artifacts}
+					mainArtifactToolIds={artifactToolIds}
 					bind:this={tabs}
 					folderId={chat ? (chat.folder_id ?? null) : ($selectedFolder?.id ?? null)}
 					chatUser={chatOwner}

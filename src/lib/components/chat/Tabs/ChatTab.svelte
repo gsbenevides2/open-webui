@@ -20,7 +20,9 @@
 	});
 	export let chatId = '';
 	export let streaming = false;
-	export let artifacts: Writable<{ type: string; content: string }[]> = writable([]);
+	export let artifacts: Writable<{ type: string; content: string; messageId?: string }[]> =
+		writable([]);
+	export let artifactToolIds: Writable<string[]> = writable([]);
 	export let onOpenArtifacts: (code?: string) => void = () => {};
 	export let onChatUpdate: (chat: { id: string; title?: string }) => void = () => {};
 	export let parentChatId = '';
@@ -120,6 +122,7 @@
 		bind:streaming
 		bind:files
 		{artifacts}
+		{artifactToolIds}
 		{onOpenArtifacts}
 		draftTitle={title}
 		draftFolderId={parentFolderId}

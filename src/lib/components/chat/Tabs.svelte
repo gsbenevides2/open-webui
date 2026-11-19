@@ -131,7 +131,10 @@
 	export let folderId: string | null = null;
 	export let terminalContext: TerminalContext | null = null;
 	export let chatUser = null;
-	export let mainArtifacts: Readable<{ type: string; content: string }[]> = readable([]);
+	export let mainArtifacts: Readable<{ type: string; content: string; messageId?: string }[]> =
+		readable([]);
+	// Tools the chat may hand to its artifacts; each chat tab keeps its own list.
+	export let mainArtifactToolIds: Readable<string[]> = readable([]);
 
 	export let bridge: import('$lib/utils/realtime').RealtimeCall | undefined = undefined;
 	export let callMode = 'current';
@@ -220,10 +223,18 @@
 	let chatTabActions: Record<string, import('svelte').Snippet | undefined> = {};
 	let chatStreamingStates: Record<string, boolean> = {};
 	// Each chat writes its artifacts here; its artifacts tab reads them.
-	const chatArtifacts: Record<string, Writable<{ type: string; content: string }[]>> = {};
+	const chatArtifacts: Record<
+		string,
+		Writable<{ type: string; content: string; messageId?: string }[]>
+	> = {};
 	const getChatArtifacts = (id: string) => (chatArtifacts[id] ??= writable([]));
 	const getArtifactsStore = (sourceTabId = mainChatTabId) =>
 		sourceTabId === mainChatTabId ? mainArtifacts : getChatArtifacts(sourceTabId);
+	// Same routing for the tool allowlist an artifact inherits from its chat.
+	const chatArtifactToolIds: Record<string, Writable<string[]>> = {};
+	const getChatArtifactToolIds = (id: string) => (chatArtifactToolIds[id] ??= writable([]));
+	const getArtifactToolIdsStore = (sourceTabId = mainChatTabId) =>
+		sourceTabId === mainChatTabId ? mainArtifactToolIds : getChatArtifactToolIds(sourceTabId);
 	// The code block each artifacts tab was last asked to show.
 	let artifactSelections: Record<string, { code: string }> = {};
 	let queuedArtifactCode: { code?: string } | null = null;
@@ -2075,6 +2086,7 @@
 					<Artifacts
 						overlay={isDragging}
 						artifacts={getArtifactsStore(tab.sourceTabId)}
+						artifactToolIds={getArtifactToolIdsStore(tab.sourceTabId)}
 						selection={artifactSelections[tab.id] ?? null}
 						chatId={(source?.id !== mainChatTabId && source?.kind === 'chat'
 							? source.chatId
@@ -2100,6 +2112,7 @@
 						bind:tabTitleEditor={chatTitleEditors[tab.id]}
 						bind:tabActions={chatTabActions[tab.id]}
 						artifacts={getChatArtifacts(tab.id)}
+						artifactToolIds={getChatArtifactToolIds(tab.id)}
 						onOpenArtifacts={(code) => openArtifacts(code, tab.id)}
 						initialView={chatView.transient[`chat:${tab.id}`]}
 						chatId={tab.chatId ?? ''}
