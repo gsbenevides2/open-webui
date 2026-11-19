@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minhas tarefas — Tarefy</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --surface: #f8fafc;
+    --border: #e2e8f0;
+    --fg: #0f172a;
+    --muted: #64748b;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --ok: #047857;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220;
+      --surface: #111a2b;
+      --border: #1f2b40;
+      --fg: #e6edf7;
+      --muted: #93a3b8;
+      --accent: #818cf8;
+      --accent-soft: #1b2440;
+      --danger: #f87171;
+      --danger-soft: #2a1517;
+      --ok: #34d399;
+    }
+  }
+  * { box-sizing: border-box; }
+  /* display:flex on the sections would otherwise beat the UA [hidden] rule. */
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 16px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .who { min-width: 0; }
+  .eyebrow {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 2px;
+  }
+  h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .actions { display: flex; gap: 8px; flex-shrink: 0; }
+  button {
+    font: inherit; color: var(--fg); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 11px; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .55; cursor: progress; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 12px; }
+  .stat {
+    flex: 1 1 120px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 12px;
+  }
+  .stat b { display: block; font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
+  .stat span { font-size: 11px; color: var(--muted); }
+
+  .filters { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12px; padding: 5px 10px; border-radius: 999px;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600;
+  }
+
+  ul.tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  li.task {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  li.task.overdue { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+  .task-body { min-width: 0; flex: 1; }
+  .task-title { font-weight: 570; margin: 0; word-break: break-word; }
+  .task-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; align-items: center; }
+  .tag {
+    font-size: 11px; padding: 2px 7px; border-radius: 6px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    white-space: nowrap;
+  }
+  .tag.project { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+  .tag.due { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+  .tag.hours { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); }
+  .id { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .empty, .error, .loading {
+    border: 1px dashed var(--border); border-radius: 10px;
+    padding: 22px 16px; text-align: center; color: var(--muted); font-size: 13px;
+  }
+  .error { border-style: solid; border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); background: var(--danger-soft); color: var(--fg); }
+  .error b { display: block; margin-bottom: 4px; color: var(--danger); }
+  .error code { font-size: 12px; word-break: break-word; }
+
+  .skeleton { display: flex; flex-direction: column; gap: 8px; }
+  .skeleton i {
+    display: block; height: 54px; border-radius: 10px;
+    background: linear-gradient(90deg, var(--surface) 25%, var(--border) 37%, var(--surface) 63%);
+    background-size: 400% 100%; animation: shimmer 1.3s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+  footer { margin-top: 14px; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="who">
+      <p class="eyebrow">Tarefy</p>
+      <h1 id="title">Minhas tarefas</h1>
+      <div class="sub" id="subtitle">carregando…</div>
+    </div>
+    <div class="actions">
+      <button id="refresh" class="primary" type="button">Atualizar</button>
+    </div>
+  </header>
+
+  <section class="stats" id="stats" hidden>
+    <div class="stat"><b id="stat-open">–</b><span>abertas</span></div>
+    <div class="stat"><b id="stat-overdue">–</b><span>atrasadas</span></div>
+    <div class="stat"><b id="stat-hours">–</b><span>horas apontadas</span></div>
+  </section>
+
+  <div class="filters" id="filters" hidden>
+    <button class="chip" type="button" data-filter="open" aria-pressed="true">Abertas</button>
+    <button class="chip" type="button" data-filter="overdue" aria-pressed="false">Atrasadas</button>
+    <button class="chip" type="button" data-filter="done" aria-pressed="false">Concluídas</button>
+  </div>
+
+  <main id="app">
+    <div class="skeleton" aria-label="Carregando tarefas">
+      <i></i><i></i><i></i><i></i>
+    </div>
+  </main>
+
+  <footer>
+    <span id="source">via MCP Tarefy · tempo real</span>
+    <span id="stamp"></span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var SERVER = 'tarefy';
+  var state = { filter: 'open', loading: false, user: null, tasks: [], total: 0, error: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var app = $('app');
+
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    var parts = String(iso).slice(0, 10).split('-');
+    if (parts.length !== 3) return String(iso);
+    return parts[2] + '/' + parts[1] + '/' + parts[0].slice(2);
+  }
+
+  function daysLate(iso) {
+    if (!iso) return 0;
+    var due = new Date(String(iso).slice(0, 10) + 'T00:00:00');
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.round((today - due) / 86400000);
+  }
+
+  function plural(n, one, many) {
+    return n + ' ' + (n === 1 ? one : many);
+  }
+
+  // The bridge resolves with an envelope: { ok, result, files, embeds, duration }.
+  // A tool that ran but failed still resolves (ok:false, result = error text).
+  function unwrap(response) {
+    if (response && typeof response === 'object' && 'result' in response) return response.result;
+    return response;
+  }
+
+  function describeError(error) {
+    var text = (error && error.message) || String(error);
+    if (/auth required|401/i.test(text)) {
+      return 'O Tarefy precisa de autorização. Abra <b>Configurações → Ferramentas</b>, conecte o MCP ' +
+        '<b>Tarefy</b> e recarregue o artefato.';
+    }
+    if (/not available|404/i.test(text)) {
+      return 'O MCP Tarefy não está disponível nesta conversa. Selecione <b>tarefy</b> na lista de ' +
+        'ferramentas do chat e gere o artefato de novo.';
+    }
+    if (/timed out|timeout/i.test(text)) {
+      return 'O Tarefy demorou demais para responder. Tente atualizar em instantes.';
+    }
+    return 'Não foi possível carregar suas tarefas.<br><code>' + esc(text) + '</code>';
+  }
+
+  function renderError(html) {
+    app.innerHTML = '<div class="error"><b>Ops</b>' + html + '</div>';
+    $('filters').hidden = true;
+    $('stats').hidden = true;
+    $('subtitle').textContent = 'falhou';
+  }
+
+  function renderLoading() {
+    app.innerHTML = '<div class="skeleton"><i></i><i></i><i></i></div>';
+    $('subtitle').textContent = 'consultando o Tarefy…';
+    $('refresh').disabled = true;
+  }
+
+  function taskCard(task) {
+    var late = task.overdue || (task.dueDate && daysLate(task.dueDate) > 0);
+    var meta = [];
+
+    if (task.project) meta.push('<span class="tag project">' + esc(task.project) + '</span>');
+    if (task.client) meta.push('<span class="tag">' + esc(task.client) + '</span>');
+    if (task.column) meta.push('<span class="tag">' + esc(task.column) + '</span>');
+
+    if (task.dueDate) {
+      var lateDays = daysLate(task.dueDate);
+      var label = lateDays > 0
+        ? 'atrasada ' + plural(lateDays, 'dia', 'dias')
+        : 'entrega ' + formatDate(task.dueDate);
+      meta.push('<span class="tag' + (lateDays > 0 ? ' due' : '') + '">' + esc(label) + '</span>');
+    }
+    if (task.workedHours > 0) {
+      meta.push('<span class="tag hours">' + esc(task.workedHours) + 'h</span>');
+    }
+
+    return '<li class="task' + (late ? ' overdue' : '') + '">' +
+      '<div class="task-body">' +
+        '<p class="task-title">' + esc(task.title) + '</p>' +
+        '<div class="task-meta">' + meta.join('') + '</div>' +
+      '</div>' +
+      '<span class="id">#' + esc(task.id) + '</span>' +
+    '</li>';
+  }
+
+  function renderTasks() {
+    var tasks = state.tasks || [];
+
+    $('stats').hidden = false;
+    $('filters').hidden = false;
+    $('refresh').disabled = false;
+    $('subtitle').textContent = state.user
+      ? 'Olá, ' + state.user.name + ' · ' + (state.user.account || 'Tarefy')
+      : 'Tarefy';
+
+    var open = tasks.filter(function (t) { return t.status === 'open'; });
+    var overdue = tasks.filter(function (t) { return t.overdue; });
+    var hours = tasks.reduce(function (sum, t) { return sum + (Number(t.workedHours) || 0); }, 0);
+
+    $('stat-open').textContent = open.length;
+    $('stat-overdue').textContent = overdue.length;
+    $('stat-hours').textContent = hours.toFixed(1).replace('.', ',');
+
+    if (!tasks.length) {
+      app.innerHTML = '<div class="empty">Nenhuma tarefa neste filtro.</div>';
+      return;
+    }
+
+    app.innerHTML = '<ul class="tasks">' + tasks.map(taskCard).join('') + '</ul>';
+
+    var shown = Math.min(tasks.length, state.total || tasks.length);
+    $('source').textContent = 'via MCP Tarefy · ' + shown +
+      (state.total && state.total > shown ? ' de ' + state.total : '') +
+      (state.total && state.total > shown ? ' tarefas (use o Tarefy para ver o resto)' : ' tarefas');
+    $('stamp').textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function pickListTool(tools) {
+    var candidates = tools.filter(function (tool) { return tool.server_id === SERVER; });
+    if (!candidates.length) return null;
+    var exact = candidates.filter(function (tool) { return /list_my_tasks$/.test(tool.name); });
+    return (exact[0] || null);
+  }
+
+  async function load() {
+    if (state.loading) return;
+
+    if (!window.owui || !window.owui.tools) {
+      renderError('As ferramentas do chat não estão disponíveis neste artefato. ' +
+        'Selecione <b>tarefy</b> nas ferramentas do chat e reabra os artefatos.');
+      return;
+    }
+
+    state.loading = true;
+    state.error = null;
+    renderLoading();
+
+    try {
+      var tools = await window.owui.tools.list();
+      var listTool = pickListTool(tools || []);
+
+      if (!listTool) {
+        throw new Error('MCP Tarefy não selecionado nesta conversa (tools do chat: ' +
+          (tools || []).map(function (t) { return t.name; }).join(', ') + ')');
+      }
+
+      var who = { name: 'você', account: '' };
+      var whoTool = (tools || []).filter(function (tool) {
+        return tool.server_id === SERVER && /whoami$/.test(tool.name);
+      })[0];
+      if (whoTool) {
+        try {
+          var whoResult = unwrap(await window.owui.tools.call(whoTool.name, {}));
+          if (whoResult && whoResult.user) {
+            who = { name: whoResult.user.name, account: (whoResult.account || {}).name || '' };
+          }
+        } catch (ignored) { /* nome é enfeite: segue com o padrão */ }
+      }
+
+      var args = { limit: 50, page: 0 };
+      if (state.filter === 'done') args.includeDone = true;
+      if (state.filter === 'overdue') args.overdueOnly = true;
+
+      var payload = unwrap(await window.owui.tools.call(listTool.name, args)) || {};
+      var items = payload.items || [];
+
+      if (state.filter === 'done') {
+        items = items.filter(function (t) { return t.status !== 'open'; });
+      }
+
+      state.user = who;
+      state.tasks = items;
+      state.total = payload.total || items.length;
+      renderTasks();
+    } catch (error) {
+      state.error = error;
+      renderError(describeError(error));
+      $('refresh').disabled = false;
+    } finally {
+      state.loading = false;
+    }
+  }
+
+  $('refresh').addEventListener('click', load);
+
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (chip) {
+    chip.addEventListener('click', function () {
+      state.filter = chip.getAttribute('data-filter');
+      Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (other) {
+        other.setAttribute('aria-pressed', String(other === chip));
+      });
+      load();
+    });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

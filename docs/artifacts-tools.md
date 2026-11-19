@@ -88,6 +88,26 @@ The call response:
 | Pure shaping (tested without the app) | `backend/open_webui/utils/artifact_selection.py` |
 | Shared MCP tool naming | `backend/open_webui/utils/tools.py` (`mcp_tool_name`) |
 
+## Example: my Tarefy tasks
+
+[`examples/artifact-tarefy-tasks.html`](./examples/artifact-tarefy-tasks.html) is a complete
+artifact that lists the viewer's tasks from the Tarefy MCP server, with counters (open /
+overdue / logged hours), filters (open, overdue, done) and a refresh button.
+
+To use it:
+
+1. In the chat composer, select the **Tarefy** MCP server under tools (the bridge only
+   offers the artifact the tools selected in that chat).
+2. Paste the HTML into a message and ask the model to open it as an artifact, or just
+   ask for “um artefato que lista minhas tarefas no Tarefy” and it will produce the same
+   calls.
+3. The first call shows the consent dialog; approve it once per tool.
+
+It exercises the whole bridge: `owui.tools.list()` to discover `tarefy_list_my_tasks` /
+`tarefy_whoami`, then `owui.tools.call(name, args)` and the `{ ok, result }` envelope. The
+states were rendered and checked in Chromium against a stubbed bridge: data, dark palette,
+missing bridge, and `Auth required` (OAuth not granted).
+
 ## Container image
 
 Published to the homelab registry:
