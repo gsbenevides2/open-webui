@@ -88,6 +88,42 @@ The call response:
 | Pure shaping (tested without the app) | `backend/open_webui/utils/artifact_selection.py` |
 | Shared MCP tool naming | `backend/open_webui/utils/tools.py` (`mcp_tool_name`) |
 
+## Container image
+
+Published to the homelab registry:
+
+```
+registry.infra.gui.dev.br/gsbenevides2/open-webui:artifact-tools-mcp
+registry.infra.gui.dev.br/gsbenevides2/open-webui:artifact-tools-e14ef6ffd
+```
+
+```bash
+docker pull registry.infra.gui.dev.br/gsbenevides2/open-webui:artifact-tools-mcp
+
+docker run -d --name open-webui \
+  -p 3000:8080 \
+  -v open-webui:/app/backend/data \
+  --restart unless-stopped \
+  registry.infra.gui.dev.br/gsbenevides2/open-webui:artifact-tools-mcp
+```
+
+The image is built with [`Dockerfile.fork`](../Dockerfile.fork): it starts from the
+matching upstream release (`ghcr.io/open-webui/open-webui:main`, 0.13.4, the version this
+fork is based on) and replaces only `build/` (frontend bundle) and `backend/`. Python
+dependencies are untouched by this feature. Rebuild with:
+
+```bash
+ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force && npm run build
+docker build -f Dockerfile.fork --build-arg BUILD_HASH=$(git rev-parse --short HEAD) \
+  -t registry.infra.gui.dev.br/gsbenevides2/open-webui:artifact-tools-mcp .
+```
+
+Smoke test performed against the pushed image: `GET /api/config` reports
+`features.enable_artifact_tools: true` for an authenticated user, `POST
+…/artifacts/tools/list` returns the chat's tool spec, `POST …/artifacts/tools/call` runs
+it (`{"ok": true, "result": "echo: hello artifact"}`), unknown fields answer `422` and a
+tool outside the allowlist answers `404`.
+
 ## Tests
 
 ```bash

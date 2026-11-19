@@ -1,0 +1,52 @@
+# syntax=docker/dockerfile:1
+#
+# Image for this fork: upstream Open WebUI plus the artifact → tools bridge.
+#
+# The stock Dockerfile reinstalls every Python dependency (slow, several GB of build
+# cache). This variant is for deployments that already run the matching upstream
+# release: it reuses that image as the base and replaces only the two directories the
+# patch touches. Python dependencies are unchanged by this feature, and the base tag is
+# pinned to the release this fork is based on.
+#
+# Build the frontend first (same command the stock Dockerfile runs):
+#
+#   ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --force
+#   npm run build
+#
+# Then:
+#
+#   docker build -f Dockerfile.fork \
+#     --build-arg BASE_IMAGE=ghcr.io/open-webui/open-webui:main \
+#     --build-arg BUILD_HASH=$(git rev-parse --short HEAD) \
+#     -t registry.infra.gui.dev.br/gsbenevides2/open-webui:artifact-tools .
+#
+# For a fully reproducible build from source instead, use the stock `Dockerfile`.
+
+ARG BASE_IMAGE=ghcr.io/open-webui/open-webui:main
+
+FROM ${BASE_IMAGE}
+
+ARG BUILD_HASH=fork
+
+# Keeps /api/version and the sidebar footer honest about what is running.
+ENV WEBUI_BUILD_HASH=${BUILD_HASH}
+
+LABEL org.opencontainers.image.title="open-webui (artifact tools fork)"
+LABEL org.opencontainers.image.description="Open WebUI with artifact access to the viewer's tools and MCP servers"
+LABEL org.opencontainers.image.source="https://github.com/gsbenevides2/open-webui"
+LABEL dev.gui.feature.artifact-tools="enabled"
+
+# Frontend bundle (built with `npm run build`), already includes the artifact runtime.
+COPY ./build /app/build
+
+# Backend source: routers/artifacts.py, utils/artifacts.py, utils/artifact_selection.py
+# and the small hooks in main.py / env.py / utils/tools.py / utils/middleware.py.
+COPY --chown=0:0 ./backend /app/backend
+
+ENV ENABLE_ARTIFACT_TOOLS=true
+
+EXPOSE 8080
+
+# Inherited from the base image; repeated so the intent survives a base swap.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
+    CMD curl -fsS http://localhost:8080/health >/dev/null || exit 1
