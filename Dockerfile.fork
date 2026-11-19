@@ -45,8 +45,6 @@ COPY --chown=0:0 ./backend /app/backend
 
 ENV ENABLE_ARTIFACT_TOOLS=true
 
-EXPOSE 8080
-
-# Inherited from the base image; repeated so the intent survives a base swap.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
-    CMD curl -fsS http://localhost:8080/health >/dev/null || exit 1
+# EXPOSE, HEALTHCHECK and ENTRYPOINT are inherited from the base image on purpose:
+# the upstream healthcheck validates the JSON status, and a weaker local copy would
+# silently mask a broken instance.
