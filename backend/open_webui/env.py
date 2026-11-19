@@ -1185,6 +1185,19 @@ ENABLE_TOOLS = ENABLE_PLUGINS and os.getenv('ENABLE_TOOLS', 'True').lower() == '
 ENABLE_FUNCTIONS = ENABLE_PLUGINS and os.getenv('ENABLE_FUNCTIONS', 'True').lower() == 'true'
 ENABLE_TOOL_SERVERS = ENABLE_PLUGINS and os.getenv('ENABLE_TOOL_SERVERS', 'True').lower() == 'true'
 
+# Artifact tools: lets an artifact rendered inside the chat ask the host page to run
+# one of the viewer's own tools or MCP tools. The artifact itself never holds a
+# session; every call is re-checked against the viewer's access grants.
+ENABLE_ARTIFACT_TOOLS = os.getenv('ENABLE_ARTIFACT_TOOLS', 'True').lower() == 'true'
+# Wall-clock budget for a single artifact tool call, in seconds.
+ARTIFACT_TOOL_TIMEOUT = _int_env('ARTIFACT_TOOL_TIMEOUT', 120)
+# Serialized size ceilings; artifacts are untrusted input and output.
+ARTIFACT_TOOL_MAX_ARGUMENT_BYTES = _int_env('ARTIFACT_TOOL_MAX_ARGUMENT_BYTES', 1_048_576)
+ARTIFACT_TOOL_MAX_RESULT_BYTES = _int_env('ARTIFACT_TOOL_MAX_RESULT_BYTES', 2_097_152)
+# Per-user call budget for the rolling window.
+ARTIFACT_TOOL_RATE_LIMIT = _int_env('ARTIFACT_TOOL_RATE_LIMIT', 60)
+ARTIFACT_TOOL_RATE_WINDOW = _int_env('ARTIFACT_TOOL_RATE_WINDOW', 60)
+
 ENABLE_PIP_INSTALL_FRONTMATTER_REQUIREMENTS = (
     os.getenv('ENABLE_PIP_INSTALL_FRONTMATTER_REQUIREMENTS', 'True').lower() == 'true'
 )

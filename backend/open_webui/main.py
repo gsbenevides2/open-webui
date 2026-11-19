@@ -75,12 +75,14 @@ from open_webui.config import (
 from open_webui.constants import ERROR_MESSAGES, TASKS
 from open_webui.env import (
     AIOHTTP_CLIENT_SESSION_SSL,
+    ARTIFACT_TOOL_TIMEOUT,
     AUDIT_EXCLUDED_PATHS,
     AUDIT_INCLUDED_PATHS,
     AUDIT_LOG_LEVEL,
     BYPASS_MODEL_ACCESS_CONTROL,
     CHANGELOG,
     DEPLOYMENT_ID,
+    ENABLE_ARTIFACT_TOOLS,
     ENABLE_AUDIT_GET_REQUESTS,
     ENABLE_COMPRESSION_MIDDLEWARE,
     ENABLE_CUSTOM_MODEL_FALLBACK,
@@ -151,6 +153,7 @@ from open_webui.models.users import Users
 from open_webui.routers import (
     apps,
     analytics,
+    artifacts,
     audio,
     auths,
     automations,
@@ -838,6 +841,7 @@ app.include_router(users.router, prefix='/api/v1/users', tags=['users'])
 app.include_router(apps.router, prefix='/api/v1/apps', tags=['apps'])
 app.include_router(channels.router, prefix='/api/v1/channels', tags=['channels'])
 app.include_router(chats.router, prefix='/api/v1/chats', tags=['chats'])
+app.include_router(artifacts.router, prefix='/api/v1', tags=['artifacts'])
 app.include_router(comments.router, prefix='/api/v1/comments', tags=['comments'])
 app.include_router(notes.router, prefix='/api/v1/notes', tags=['notes'])
 app.include_router(search.router, prefix='/api/v1/search', tags=['search'])
@@ -2476,6 +2480,9 @@ async def get_app_config(request: Request):
                     'enable_tools': ENABLE_TOOLS,
                     'enable_functions': ENABLE_FUNCTIONS,
                     'enable_tool_servers': ENABLE_TOOL_SERVERS,
+                    'enable_artifact_tools': ENABLE_ARTIFACT_TOOLS
+                    and (ENABLE_TOOLS or ENABLE_TOOL_SERVERS),
+                    'artifact_tool_timeout': ARTIFACT_TOOL_TIMEOUT,
                     'enable_terminal_servers': ENABLE_TOOL_SERVERS
                     and any(
                         connection.get('enabled', True)

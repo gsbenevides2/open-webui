@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import copy
-import hashlib
 import html
 import inspect
 import json
@@ -190,6 +189,7 @@ from open_webui.utils.tools import (
     get_tools,
     get_updated_tool_function,
     is_file_context_enabled,
+    mcp_tool_name,
 )
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
@@ -2716,10 +2716,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
 
                             tool_function = await make_tool_function(client, tool_spec['name'])
 
-                            tool_name = f'{server_id}_{tool_spec["name"]}'
-                            # Providers reject tool names over 64 characters
-                            if len(tool_name) > 64:
-                                tool_name = f'{tool_name[:55]}_{hashlib.sha256(tool_name.encode()).hexdigest()[:8]}'
+                            tool_name = mcp_tool_name(server_id, tool_spec['name'])
 
                             mcp_tools_dict[tool_name] = {
                                 'spec': {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import copy
+import hashlib
 import inspect
 import logging
 import os
@@ -1173,6 +1174,19 @@ def clean_openai_tool_schema(spec: dict) -> dict:
         clean_properties(cleaned_spec['parameters'])
 
     return cleaned_spec
+
+
+def mcp_tool_name(server_id: str, tool_name: str) -> str:
+    """Flat, provider-safe name for an MCP tool.
+
+    Shared by the chat pipeline and the artifact bridge so a tool keeps the same
+    name wherever it is called from.
+    """
+    name = f'{server_id}_{tool_name}'
+    # Providers reject tool names over 64 characters
+    if len(name) > 64:
+        name = f'{name[:55]}_{hashlib.sha256(name.encode()).hexdigest()[:8]}'
+    return name
 
 
 @cache
